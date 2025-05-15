@@ -7,9 +7,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,12 +30,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ericg.neatflix.R
+import com.ericg.neatflix.screens.destinations.StartScreenDestination
 import com.ericg.neatflix.screens.destinations.WatchListDestination
 import com.ericg.neatflix.sharedComposables.BackButton
 import com.ericg.neatflix.sharedComposables.CustomSwitch
 import com.ericg.neatflix.ui.theme.AppOnPrimaryColor
 import com.ericg.neatflix.ui.theme.AppPrimaryColor
 import com.ericg.neatflix.ui.theme.ButtonColor
+import com.ericg.neatflix.viewmodel.AuthViewModel
 import com.ericg.neatflix.viewmodel.PrefsViewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
@@ -43,8 +48,20 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 @Composable
 fun Profile(
     navigator: DestinationsNavigator,
-    prefsViewModel: PrefsViewModel = hiltViewModel()
+    prefsViewModel: PrefsViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
+    val currentUserName by authViewModel.userName.collectAsState()
+    val authToken by authViewModel.authToken.collectAsState()
+
+    LaunchedEffect(authToken) {
+        if (authToken == null) {
+            navigator.navigate(StartScreenDestination) {
+                popUpTo(StartScreenDestination.route) { inclusive = true }
+            }
+        }
+    }
+
     ConstraintLayout(
         modifier = Modifier
             .fillMaxSize()
@@ -60,6 +77,7 @@ fun Profile(
             imageBoarder,
             translucentBr,
             btnWatchList,
+            btnLogout,
             settingsBox,
             appVersion
         ) = createRefs()
@@ -171,7 +189,7 @@ fun Profile(
         }
 
         Text(
-            text = userName("NeatFlix User"),
+            text = userName(currentUserName ?: "User"),
             fontWeight = FontWeight.Normal,
             fontSize = 16.sp,
             color = AppOnPrimaryColor,
@@ -198,6 +216,30 @@ fun Profile(
             }
         ) {
             Text(text = "My List")
+        }
+
+        Button(
+            modifier = Modifier
+                .constrainAs(btnLogout) {
+                    start.linkTo(btnWatchList.start)
+                    end.linkTo(btnWatchList.end)
+                    top.linkTo(btnWatchList.bottom, margin = 8.dp)
+                },
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = ButtonColor,
+                contentColor = AppOnPrimaryColor
+            ),
+            onClick = {
+                authViewModel.logoutUser()
+            }
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.Logout,
+                contentDescription = "Logout",
+                modifier = Modifier.size(ButtonDefaults.IconSize)
+            )
+            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+            Text("Logout")
         }
 
         Column(

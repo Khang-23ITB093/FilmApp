@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -22,18 +23,58 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ericg.neatflix.R
+import com.ericg.neatflix.model.LoginRequest
+import com.ericg.neatflix.screens.destinations.HomeDestination
+import com.ericg.neatflix.screens.destinations.LogInScreenDestination
+import com.ericg.neatflix.screens.destinations.SignUpScreenDestination
 import com.ericg.neatflix.sharedComposables.BackButton
 import com.ericg.neatflix.sharedComposables.NextButton
 import com.ericg.neatflix.ui.theme.AppOnPrimaryColor
+import com.ericg.neatflix.ui.theme.NeatFlixTheme
+import com.ericg.neatflix.util.Resource
+import com.ericg.neatflix.viewmodel.AuthViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@Destination
 @Composable
-fun LogInScreen() {
+fun LogInScreen(
+    navigator: DestinationsNavigator, 
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    var emailInput by remember { mutableStateOf("") }
+    var passwordInput by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) }
+
+    val loginState by authViewModel.loginState.collectAsState()
+
+    LaunchedEffect(loginState) {
+        when (val state = loginState) {
+            is Resource.Success -> {
+                if (state.data?.token != null) {
+                    authViewModel.resetLoginState() 
+                    navigator.navigate(HomeDestination) { 
+                        popUpTo(LogInScreenDestination.route) { inclusive = true }
+                    }
+                }
+            }
+            is Resource.Error -> {
+                android.widget.Toast.makeText(context, state.statusMessage ?: "Login Failed", android.widget.Toast.LENGTH_LONG).show()
+                authViewModel.resetLoginState() 
+            }
+            else -> Unit 
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF180E36)),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -41,12 +82,11 @@ fun LogInScreen() {
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 24.dp)
         ) {
-            BackButton {
-
-            }
             Text(
                 text = "Welcome back",
-                modifier = Modifier.fillMaxWidth().offset((-12).dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 48.dp),
                 textAlign = TextAlign.Center,
                 color = Color.White.copy(alpha = 0.78F),
                 fontSize = 24.sp,
@@ -59,15 +99,6 @@ fun LogInScreen() {
             modifier = Modifier.padding(vertical = 12.dp),
             contentDescription = "logo"
         )
-        var emailInput by remember {
-            mutableStateOf("")
-        }
-        var passwordInput by remember {
-            mutableStateOf("")
-        }
-        var isPasswordVisible by remember {
-            mutableStateOf(false)
-        }
         val textFieldColors = TextFieldDefaults.outlinedTextFieldColors(
             textColor = AppOnPrimaryColor,
             cursorColor = AppOnPrimaryColor,
@@ -81,60 +112,82 @@ fun LogInScreen() {
 
         OutlinedTextField(
             value = emailInput,
-            onValueChange = { newValue ->
-                emailInput = if(newValue.length <= 32) newValue else emailInput
-            },
+            onValueChange = { emailInput = it },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 12.dp),
-            label = {
-                Text(text = "Email")
-            },
-            leadingIcon = {
-                Icon(imageVector = Icons.Default.Email, contentDescription = "icon")
-            },
+            label = { Text("Email") },
+            leadingIcon = { Icon(Icons.Default.Email, "Email Icon") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = textFieldColors
+            colors = textFieldColors,
+            enabled = loginState !is Resource.Loading 
         )
 
         OutlinedTextField(
             value = passwordInput,
-            onValueChange = { newValue ->
-                passwordInput = if(newValue.length <= 16) newValue else passwordInput
-            },
+            onValueChange = { passwordInput = it },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 12.dp),
-            label = {
-                Text(text = "Password")
-            },
-            leadingIcon = {
-                Icon(imageVector = Icons.Default.Lock, contentDescription = "icon")
-            },
+            label = { Text("Password") },
+            leadingIcon = { Icon(Icons.Default.Lock, "Password Icon") },
             trailingIcon = {
-                val image = if (isPasswordVisible)
-                    R.drawable.ic_visibility else R.drawable.ic_visibility_off
-                IconButton(onClick = {
-                    isPasswordVisible = !isPasswordVisible
-                }) {
-                    Icon(painter = painterResource(id = image), "toggle icon")
+                val imageResId = if (isPasswordVisible)
+                    R.drawable.ic_visibility
+                else R.drawable.ic_visibility_off
+                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                    Icon(painter = painterResource(id = imageResId), "Toggle password visibility")
                 }
             },
             singleLine = true,
             visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = textFieldColors
+            colors = textFieldColors,
+            enabled = loginState !is Resource.Loading 
         )
 
-        NextButton {
+        Spacer(modifier = Modifier.height(24.dp))
 
+        if (loginState is Resource.Loading) {
+            CircularProgressIndicator(color = AppOnPrimaryColor)
+        } else {
+            NextButton(
+                onClick = {
+                    if (emailInput.isNotBlank() && passwordInput.isNotBlank()) {
+                        authViewModel.loginUser(
+                            LoginRequest(
+                                email = emailInput.trim(),
+                                password = passwordInput
+                            )
+                        )
+                    } else {
+                        android.widget.Toast.makeText(context, "Email and password cannot be empty.", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+        
+        TextButton(onClick = {
+            navigator.navigate(SignUpScreenDestination)
+        }) {
+            Text("Don't have an account? Sign Up", color = AppOnPrimaryColor, modifier = Modifier.padding(bottom = 16.dp))
         }
     }
 }
 
 @Preview(device = Devices.DEFAULT)
 @Composable
-fun LogInScreenPrev() {
-    LogInScreen()
+fun LogInScreenPrevWithTheme() { 
+    NeatFlixTheme { 
+        Column(
+            modifier = Modifier.fillMaxSize().background(Color(0xFF180E36)),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+            ){
+             Text("Login Screen Preview (Actual requires Hilt/Nav)", color = Color.White, textAlign = TextAlign.Center)
+        }
+    }
 }

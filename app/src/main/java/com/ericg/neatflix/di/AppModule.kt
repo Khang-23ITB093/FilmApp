@@ -5,11 +5,17 @@ import androidx.room.Room
 import com.ericg.neatflix.data.local.WatchListDatabase
 import com.ericg.neatflix.data.preferences.UserPreferences
 import com.ericg.neatflix.data.remote.APIService
+import com.ericg.neatflix.data.remote.AuthApiService
+import com.ericg.neatflix.data.remote.AuthInterceptor
+import com.ericg.neatflix.data.repository.AuthRepository
+import com.ericg.neatflix.data.repository.AuthRepositoryImpl
 import com.ericg.neatflix.data.repository.GenreRepository
 import com.ericg.neatflix.data.repository.FilmRepository
 import com.ericg.neatflix.data.repository.SearchRepository
 import com.ericg.neatflix.data.repository.WatchListRepository
 import com.ericg.neatflix.util.Constants.BASE_URL
+import com.ericg.neatflix.util.Constants.LARAVEL_API_BASE_URL
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,6 +25,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -30,11 +37,31 @@ object AppModule {
         return HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)
     }
 
+    @Provides
+    @Singleton
+    @Named("LaravelBaseUrl") 
+    fun provideLaravelBaseUrl(): String {
+        return LARAVEL_API_BASE_URL
+    }
+
     @Singleton
     @Provides
-    fun providesOkHttpClient(httpLoggingInterceptor: HttpLoggingInterceptor): OkHttpClient {
+    fun provideAuthInterceptor(
+        userPreferences: UserPreferences,
+        @Named("LaravelBaseUrl") laravelBaseUrl: String 
+    ): AuthInterceptor { 
+        return AuthInterceptor(userPreferences, laravelBaseUrl)
+    }
+
+    @Singleton
+    @Provides
+    fun providesOkHttpClient(
+        httpLoggingInterceptor: HttpLoggingInterceptor,
+        authInterceptor: AuthInterceptor 
+    ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(httpLoggingInterceptor)
+            .addInterceptor(authInterceptor) 
             .callTimeout(15, TimeUnit.SECONDS)
             .connectTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
@@ -44,13 +71,36 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun providesAPIService(okHttpClient: OkHttpClient): APIService {
+    fun provideGson(): Gson { 
+        return Gson()
+    }
+
+    @Singleton
+    @Provides
+    fun providesTmdbApiService(okHttpClient: OkHttpClient, gson: Gson): APIService { 
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson)) 
             .client(okHttpClient)
             .build()
             .create(APIService::class.java)
+    }
+
+    @Singleton
+    @Provides
+    fun providesAuthApiService(okHttpClient: OkHttpClient, gson: Gson): AuthApiService { 
+        return Retrofit.Builder()
+            .baseUrl(LARAVEL_API_BASE_URL) 
+            .addConverterFactory(GsonConverterFactory.create(gson)) 
+            .client(okHttpClient)
+            .build()
+            .create(AuthApiService::class.java)
+    }
+
+    @Singleton
+    @Provides
+    fun provideAuthRepository(authApiService: AuthApiService, gson: Gson): AuthRepository {
+        return AuthRepositoryImpl(authApiService, gson)
     }
 
     @Singleton
