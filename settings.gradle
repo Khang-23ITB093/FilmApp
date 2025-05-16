@@ -16,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NeatFlix"
+rootProject.name = "NitFlex"
 include ':app'

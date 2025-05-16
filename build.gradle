@@ -6,6 +6,7 @@ buildscript {
         agp_version = '8.2.2'
     }
     repositories {
+        maven { url 'https://jitpack.io' }
         google()
         mavenCentral()
     }

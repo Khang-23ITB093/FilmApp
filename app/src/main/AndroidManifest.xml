@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name="com.ericg.neatflix.util.baseclass.NeatFlixApp"
+        android:name="com.khang.nitflex.util.baseclass.NitFlexApp"
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:enableOnBackInvokedCallback="true"
-        android:theme="@style/Theme.NeatFlix"
-        android:networkSecurityConfig="@xml/network_security_config">
+        android:theme="@style/Theme.NitFlex">
+
         <activity
-            android:name=".screens.MainActivity"
+            android:name="com.khang.nitflex.screens.MainActivity"
             android:exported="true"
             android:screenOrientation="fullSensor"
-            android:theme="@style/Theme.NeatFlix"
+            android:theme="@style/Theme.NitFlex"
             tools:ignore="DiscouragedApi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,8 +28,7 @@
             </intent-filter>
             <meta-data
                 android:name="API_KEY"
-                android:value="1234">
-            </meta-data>
+                android:value="1234"></meta-data>
         </activity>
     </application>
 </manifest>
