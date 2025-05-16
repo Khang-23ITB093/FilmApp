@@ -11,9 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Text
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +35,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.ImageLoader
@@ -64,9 +63,12 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import android.os.Build.VERSION.SDK_INT
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import java.text.SimpleDateFormat
 import java.util.*
 import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ericg.neatflix.screens.destinations.MoviePlayerDestinationHelper
+import com.ericg.neatflix.screens.destinations.MoviePlayerScreenDestination
 
 @RootNavGraph
 @Destination
@@ -132,25 +134,38 @@ fun MovieDetails(
                 translucentBr
             ) = createRefs()
 
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data("$BASE_BACKDROP_IMAGE_URL/${film.backdropPath}")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "Header backdrop image",
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .fillMaxHeight()
-                    .constrainAs(backdropImage) {
-                        top.linkTo(parent.top)
-                        bottom.linkTo(parent.bottom)
-                    },
-                contentScale = ContentScale.Crop,
-                error = painterResource(id = R.drawable.backdrop_not_available),
-            )
+                    .height(300.dp)
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data("$BASE_BACKDROP_IMAGE_URL/${film.backdropPath}")
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Header backdrop image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                        .fillMaxHeight(),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.backdrop_not_available),
+                )
 
-            ConstraintLayout(
+                PlayButton(
+                    film = film,
+                    navigator = navigator,
+                    context = context,
+                    iconTint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(64.dp)
+                        .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                )
+            }
+
+            Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
@@ -160,10 +175,10 @@ fun MovieDetails(
                         start.linkTo(parent.start, margin = 10.dp)
                     }
             ) {
-                val (icon) = createRefs()
-                IconButton(onClick = {
-                    navigator.navigateUp()
-                }) {
+                IconButton(
+                    onClick = { navigator.navigateUp() },
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = "back button",
@@ -171,12 +186,6 @@ fun MovieDetails(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(6.dp)
-                            .constrainAs(icon) {
-                                top.linkTo(parent.top)
-                                bottom.linkTo(parent.bottom)
-                                start.linkTo(parent.start)
-                                end.linkTo(parent.end)
-                            }
                     )
                 }
             }
@@ -207,8 +216,10 @@ fun MovieDetails(
                     start.linkTo(moviePosterImage.end, margin = 12.dp)
                     end.linkTo(parent.end, margin = 12.dp)
                     bottom.linkTo(moviePosterImage.bottom, margin = 10.dp)
+                    width = Dimension.fillToConstraints
                 },
-                verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.Start
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.Start
             ) {
 
                 var paddingValue by remember { mutableStateOf(2) }
@@ -301,6 +312,16 @@ fun MovieDetails(
                             color = color
                         )
                     }
+
+                    // Nút xem phim
+                    PlayButton(
+                        film = film,
+                        navigator = navigator,
+                        context = context,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(ButtonColor.copy(alpha = 0.78F), shape = CircleShape)
+                    )
 
                     val context = LocalContext.current
                     IconButton(onClick = {
@@ -565,5 +586,43 @@ fun ExpandableText(
                     )
             )
         }
+    }
+}
+
+@Composable
+private fun PlayButton(
+    film: Film,
+    navigator: DestinationsNavigator,
+    context: android.content.Context,
+    iconTint: Color = AppOnPrimaryColor,
+    modifier: Modifier = Modifier,
+    iconSize: Modifier = Modifier.size(32.dp)
+) {
+    IconButton(
+        onClick = {
+            MoviePlayerDestinationHelper.fromFilm(film)?.let { args ->
+                navigator.navigate(
+                    MoviePlayerScreenDestination(
+                        movieId = args.movieId,
+                        movieTitle = args.movieTitle,
+                        moviePoster = args.moviePoster
+                    )
+                )
+            } ?: run {
+                Toast.makeText(
+                    context,
+                    "Cannot play this movie at the moment",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        },
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = "Play",
+            tint = iconTint,
+            modifier = iconSize
+        )
     }
 }
