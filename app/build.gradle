@@ -12,11 +12,11 @@ def apikeyProperties = new Properties()
 apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
 
 android {
-    namespace 'com.ericg.neatflix'
+    namespace 'com.khang.nitflex'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.ericg.neatflix"
+        applicationId "com.khang.nitflex"
         minSdk 26
         targetSdk 34
         versionCode 1
