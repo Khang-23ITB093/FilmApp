@@ -34,8 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil.ImageLoader
@@ -121,23 +119,17 @@ fun MovieDetails(
             .fillMaxSize()
             .background(Color(0xFF180E36))
     ) {
-        ConstraintLayout(
+
+        // BACKDROP IMAGE
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.33F)
+                .height(200.dp)
         ) {
-            val (
-                backdropImage,
-                backButton,
-                movieTitleBox,
-                moviePosterImage,
-                translucentBr
-            ) = createRefs()
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
+                    .height(220.dp)
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -145,14 +137,29 @@ fun MovieDetails(
                         .crossfade(true)
                         .build(),
                     contentDescription = "Header backdrop image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                        .fillMaxHeight(),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     error = painterResource(id = R.drawable.backdrop_not_available),
                 )
 
+                // Back button
+                IconButton(
+                    onClick = { navigator.navigateUp() },
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .size(38.dp)
+                        .background(ButtonColor.copy(alpha = 0.78F), CircleShape)
+                        .align(Alignment.TopStart)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "back button",
+                        tint = AppOnPrimaryColor,
+                        modifier = Modifier.padding(6.dp)
+                    )
+                }
+
+                // Play button
                 PlayButton(
                     film = film,
                     navigator = navigator,
@@ -160,216 +167,168 @@ fun MovieDetails(
                     iconTint = Color.White,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(64.dp)
+                        .size(56.dp)
                         .background(Color.White.copy(alpha = 0.2f), CircleShape)
                 )
-            }
 
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(ButtonColor.copy(alpha = 0.78F))
-                    .constrainAs(backButton) {
-                        top.linkTo(parent.top, margin = 16.dp)
-                        start.linkTo(parent.start, margin = 10.dp)
-                    }
-            ) {
-                IconButton(
-                    onClick = { navigator.navigateUp() },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "back button",
-                        tint = AppOnPrimaryColor,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(6.dp)
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            listOf(
-                                Color.Transparent,
-                                Color(0XFF180E36).copy(alpha = 0.5F),
-                                Color(0XFF180E36)
-                            ),
-                            startY = 0.1F
-                        )
-                    )
-                    .constrainAs(translucentBr) {
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        bottom.linkTo(backdropImage.bottom)
-                    }
-            )
-
-            Column(
-                modifier = Modifier.constrainAs(movieTitleBox) {
-                    start.linkTo(moviePosterImage.end, margin = 12.dp)
-                    end.linkTo(parent.end, margin = 12.dp)
-                    bottom.linkTo(moviePosterImage.bottom, margin = 10.dp)
-                    width = Dimension.fillToConstraints
-                },
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.Start
-            ) {
-
-                var paddingValue by remember { mutableStateOf(2) }
-                Text(
-                    text = when (film.mediaType) {
-                        "tv" -> {
-                            paddingValue = 2
-                            "Series"
-                        }
-                        "movie" -> {
-                            paddingValue = 2
-                            "Movie"
-                        }
-                        else -> {
-                            paddingValue = 0
-                            ""
-                        }
-                    },
+                // Gradient overlay
+                Box(
                     modifier = Modifier
-                        .clip(shape = RoundedCornerShape(size = 4.dp))
-                        .background(Color.DarkGray.copy(alpha = 0.5F))
-                        .padding(paddingValue.dp),
-                    color = AppOnPrimaryColor.copy(alpha = 0.78F),
-                    fontSize = 12.sp,
-                )
-
-                Text(
-                    text = film.title,
-                    modifier = Modifier
-                        .padding(top = 2.dp, start = 4.dp, bottom = 8.dp)
-                        .fillMaxWidth(0.5F),
-                    maxLines = 2,
-                    fontSize = 18.sp,
-                    fontWeight = Bold,
-                    color = Color.White.copy(alpha = 0.78F)
-                )
-
-                Text(
-                    text = film.releaseDate,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-                    fontSize = 15.sp,
-                    fontWeight = Light,
-                    color = Color.White.copy(alpha = 0.56F)
-                )
-
-                RatingBar(
-                    value = (film.voteAverage / 2).toFloat(),
-                    style = RatingBarStyle.Fill(),
-                    onValueChange = {},
-                    onRatingChanged = {},
-                    modifier = Modifier.padding(horizontal = 6.dp),
-                    numOfStars = 5,
-                    size = 16.dp,
-                    spaceBetween = 4.dp,
-                    isIndicator = true,
-                    stepSize = StepSize.HALF,
-                    hideInactiveStars = false,
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(start = 4.dp, bottom = 8.dp)
-                        .fillMaxWidth(0.42F),
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .border(
-                                1.dp,
-                                color = if (film.adult) Color(0xFFFF6F6F) else Color.White.copy(
-                                    alpha = 0.78F
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color(0XFF180E36).copy(alpha = 0.5F),
+                                    Color(0XFF180E36)
                                 )
                             )
-                            .background(if (film.adult) Color(0xFFFF6F6F).copy(alpha = 0.14F) else Color.Transparent)
-                            .padding(4.dp)
-                    ) {
-                        val color: Color
-                        Text(
-                            text = if (film.adult) {
-                                color = Color(0xFFFF6F6F)
-                                "18+"
-                            } else {
-                                color = Color.White.copy(alpha = 0.56F)
-                                "PG"
-                            },
-                            fontSize = 14.sp,
-                            fontWeight = Normal,
-                            color = color
                         )
-                    }
+                )
+            }
 
-                    // Nút xem phim
-                    PlayButton(
-                        film = film,
-                        navigator = navigator,
-                        context = context,
+            // POSTER + INFO
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = (120).dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data("$BASE_POSTER_IMAGE_URL/${film.posterPath}")
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "movie poster",
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .width(110.dp)
+                        .height(165.dp)
+                        .border(2.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(4.dp)),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.image_not_available)
+                )
+
+                Column(
+                    modifier = Modifier
+                        .padding(start = 12.dp, top = 12.dp, bottom = 8.dp)
+                        .weight(1f)
+                ) {
+                    var paddingValue by remember { mutableStateOf(2) }
+                    Text(
+                        text = when (film.mediaType) {
+                            "tv" -> {
+                                paddingValue = 2
+                                "Series"
+                            }
+
+                            "movie" -> {
+                                paddingValue = 2
+                                "Movie"
+                            }
+
+                            else -> {
+                                paddingValue = 0
+                                ""
+                            }
+                        },
                         modifier = Modifier
-                            .size(32.dp)
-                            .background(ButtonColor.copy(alpha = 0.78F), shape = CircleShape)
+                            .clip(shape = RoundedCornerShape(size = 4.dp))
+                            .background(Color.DarkGray.copy(alpha = 0.5F))
+                            .padding(paddingValue.dp),
+                        color = AppOnPrimaryColor.copy(alpha = 0.78F),
+                        fontSize = 12.sp,
                     )
 
-                    val context = LocalContext.current
-                    IconButton(onClick = {
-                        if (addedToList != 0) {
-                            watchListViewModel.removeFromWatchList(watchListMovie.mediaId)
-                            Toast.makeText(
-                                context, "Removed from watchlist", LENGTH_SHORT
-                            ).show()
+                    Text(
+                        text = film.title,
+                        modifier = Modifier
+                            .padding(top = 2.dp, start = 4.dp, bottom = 8.dp)
+                            .fillMaxWidth(),
+                        maxLines = 2,
+                        fontSize = 18.sp,
+                        fontWeight = Bold,
+                        color = Color.White.copy(alpha = 0.78F)
+                    )
 
-                        } else {
-                            watchListViewModel.addToWatchList(watchListMovie)
-                            Toast.makeText(
-                                context, "Added to watchlist", LENGTH_SHORT
-                            ).show()
+                    Text(
+                        text = film.releaseDate,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
+                        fontSize = 15.sp,
+                        fontWeight = Light,
+                        color = Color.White.copy(alpha = 0.56F)
+                    )
 
+                    RatingBar(
+                        value = (film.voteAverage / 2).toFloat(),
+                        style = RatingBarStyle.Fill(),
+                        onValueChange = {},
+                        onRatingChanged = {},
+                        modifier = Modifier.padding(horizontal = 6.dp),
+                        numOfStars = 5,
+                        size = 16.dp,
+                        spaceBetween = 4.dp,
+                        isIndicator = true,
+                        stepSize = StepSize.HALF,
+                        hideInactiveStars = false,
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(start = 0.dp, bottom = 8.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        if (film.adult)
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .border(
+                                        1.dp,
+                                        color = if (film.adult) Color(0xFFFF6F6F) else Color.White.copy(
+                                            alpha = 0.78F
+                                        )
+                                    )
+                                    .background(if (film.adult) Color(0xFFFF6F6F).copy(alpha = 0.14F) else Color.Transparent)
+                                    .padding(4.dp)
+                            ) {
+                                val color: Color
+                                Text(
+                                    text = "18+",
+                                    fontSize = 14.sp,
+                                    fontWeight = Normal,
+                                    color = Color(0xFFFF6F6F)
+                                )
+                            }
+
+                        IconButton(onClick = {
+                            if (addedToList != 0) {
+                                watchListViewModel.removeFromWatchList(watchListMovie.mediaId)
+                                Toast.makeText(
+                                    context, "Removed from watchlist", LENGTH_SHORT
+                                ).show()
+                            } else {
+                                watchListViewModel.addToWatchList(watchListMovie)
+                                Toast.makeText(
+                                    context, "Added to watchlist", LENGTH_SHORT
+                                ).show()
+                            }
+                        }) {
+                            Icon(
+                                painter = painterResource(
+                                    id = if (addedToList != 0) R.drawable.ic_added_to_list
+                                    else R.drawable.ic_add_to_list
+                                ),
+                                tint = AppOnPrimaryColor,
+                                contentDescription = "add to watch list icon"
+                            )
                         }
-                    }) {
-                        Icon(
-                            painter = painterResource(
-                                id = if (addedToList != 0) R.drawable.ic_added_to_list
-                                else R.drawable.ic_add_to_list
-                            ),
-                            tint = AppOnPrimaryColor,
-                            contentDescription = "add to watch list icon"
-                        )
                     }
                 }
             }
-
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data("$BASE_POSTER_IMAGE_URL/${film.posterPath}")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "movie poster",
-                modifier = Modifier
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .width(115.dp)
-                    .height(172.5.dp)
-                    .constrainAs(moviePosterImage) {
-                        top.linkTo(backdropImage.bottom)
-                        bottom.linkTo(backdropImage.bottom)
-                        start.linkTo(parent.start)
-                    },
-                contentScale = ContentScale.Crop,
-                error = painterResource(id = R.drawable.image_not_available)
-            )
         }
 
         LazyRow(
