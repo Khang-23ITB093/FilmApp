@@ -25,12 +25,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.TextField
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.khang.nitflex.ui.theme.AppOnPrimaryColor
 import com.khang.nitflex.ui.theme.AppPrimaryColor
 import com.khang.nitflex.ui.components.MoviePlayerControls
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.gowtham.ratingbar.RatingBar
 import com.gowtham.ratingbar.RatingBarStyle
+import com.khang.nitflex.sharedComposables.BackButton
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
@@ -107,12 +110,22 @@ fun MoviePlayerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(movieTitle) },
+                title = {
+                    Text(
+                        text = movieTitle,
+                        color = Color.White, // Set text color to white
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    BackButton {
+                        navigator.navigateUp()
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF180E36), // Set background color
+                    titleContentColor = Color.White // Set title text color
+                )
             )
         }
     ) { paddingValues ->
